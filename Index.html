@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>La posición correcta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#101820; --panel:#182430; --panel-raised:#1E2C39; --grid:#26384a;
+    --text:#EDEEE9; --muted:#93A6B5; --amber:#E8B94B; --green:#4FA97A; --red:#D9584A;
+    --sky:#2C4A5E; --grass:#234A38;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: radial-gradient(circle at 1px 1px, var(--grid) 1px, transparent 1.4px) 0 0/24px 24px, var(--bg);
+    color:var(--text); font-family:'Inter',system-ui,sans-serif; min-height:100vh;
+    display:flex; justify-content:center; padding:26px 14px 60px;
+  }
+  .app{width:100%;max-width:520px;}
+  h1,h2{font-family:'Spectral',serif;font-weight:600;margin:0;}
+  .title-block{margin-bottom:20px;}
+  .title-block h1{font-size:1.55rem;line-height:1.25;}
+  .title-block .sub{color:var(--muted);font-size:0.9rem;margin-top:6px;line-height:1.5;}
+  .panel{background:var(--panel);border:1px solid var(--grid);border-radius:10px;padding:18px;margin-bottom:16px;}
+  label{display:block;font-size:0.85rem;color:var(--muted);margin-bottom:6px;}
+  select{width:100%;background:var(--panel-raised);border:1px solid var(--grid);border-radius:6px;color:var(--text);font-family:'Inter',sans-serif;font-size:1rem;padding:10px 12px;margin-bottom:16px;}
+  select:focus{outline:2px solid var(--amber);outline-offset:1px;}
+  button{font-family:'Inter',sans-serif;font-weight:600;font-size:0.95rem;border:none;border-radius:6px;padding:12px 18px;cursor:pointer;transition:transform .08s ease, background .15s ease;}
+  button:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+  button:active{transform:scale(0.98);}
+  button:disabled{opacity:0.5;cursor:default;}
+  .btn-primary{background:var(--amber);color:#231A08;width:100%;}
+  .btn-primary:hover{background:#f0c563;}
+  .btn-secondary{background:transparent;border:1px solid var(--grid);color:var(--text);width:100%;}
+  .btn-secondary:hover{border-color:var(--muted);}
+  .hidden{display:none !important;}
+  .warn{color:var(--red);font-size:0.85rem;margin:-8px 0 12px;min-height:1.1em;}
+
+  .scoreboard{display:flex;gap:10px;margin-bottom:14px;}
+  .scoreboard .box{flex:1;background:var(--panel-raised);border:1px solid var(--grid);border-radius:8px;padding:8px 10px;text-align:center;}
+  .scoreboard .box.active{border-color:var(--amber);}
+  .scoreboard .name{font-family:'Spectral',serif;font-style:italic;font-size:0.88rem;color:var(--muted);}
+  .scoreboard .points{font-family:'IBM Plex Mono',monospace;font-size:1.3rem;color:var(--text);}
+
+  .status-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;color:var(--muted);font-size:0.85rem;}
+  .status-row .turn{color:var(--text);font-family:'Spectral',serif;font-style:italic;font-size:1.02rem;}
+
+  .known-box{background:var(--panel-raised);border:1px dashed var(--grid);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:var(--muted);}
+  .known-box b{color:var(--text);}
+
+  .clues{background:var(--panel-raised);border-left:3px solid var(--amber);border-radius:6px;padding:10px 14px;margin-bottom:14px;}
+  .clues .clue{font-family:'IBM Plex Mono',monospace;font-size:1rem;color:var(--text);padding:3px 0;}
+
+  .instruction{font-size:0.88rem;color:var(--muted);margin-bottom:12px;line-height:1.45;}
+
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .card{background:var(--panel-raised);border:1px solid var(--grid);border-radius:8px;padding:8px 6px 10px;cursor:pointer;text-align:center;}
+  .card:hover{border-color:var(--muted);}
+  .card.selected-correct{border-color:var(--green);box-shadow:0 0 0 1px var(--green);}
+  .card.selected-wrong{border-color:var(--red);box-shadow:0 0 0 1px var(--red);}
+  .card.reveal-correct{border-color:var(--amber);}
+  .card .card-label{font-family:'Spectral',serif;font-style:italic;color:var(--muted);font-size:0.82rem;margin-bottom:2px;}
+  .card svg{width:100%;height:auto;display:block;}
+
+  .feedback{margin-top:14px;padding:12px 14px;border-radius:8px;font-size:0.88rem;line-height:1.5;}
+  .feedback.ok{background:rgba(79,169,122,0.12);border:1px solid var(--green);}
+  .feedback.no{background:rgba(217,88,74,0.12);border:1px solid var(--red);}
+
+  .score-line{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:1.1rem;padding:8px 0;border-bottom:1px solid var(--grid);}
+  .score-line:last-child{border-bottom:none;}
+  .score-line .name{font-family:'Spectral',serif;font-style:italic;font-size:1.05rem;}
+  .winner{text-align:center;font-family:'Spectral',serif;font-size:1.3rem;margin:18px 0 8px;color:var(--amber);}
+
+  .roundcount{display:flex;gap:5px;margin-bottom:14px;}
+  .roundcount span{flex:1;height:4px;border-radius:2px;background:var(--grid);}
+  .roundcount span.done-ok{background:var(--green);}
+  .roundcount span.done-no{background:var(--red);}
+  .roundcount span.current{background:var(--amber);}
+
+  /* --- penal --- */
+  .penal-intro{text-align:center;font-family:'Spectral',serif;font-style:italic;font-size:1.05rem;margin-bottom:14px;}
+  .goal-frame{position:relative;width:100%;height:150px;background:linear-gradient(180deg,var(--sky) 0%,var(--sky) 62%,var(--grass) 62%,var(--grass) 100%);border-radius:8px;overflow:hidden;border:2px solid #cfe3ee;margin-bottom:16px;}
+  .goal-frame::before{content:'';position:absolute;left:6%;right:6%;top:14px;bottom:38%;border:3px solid #EDEEE9;border-bottom:none;opacity:0.85;}
+  .zone-line{position:absolute;top:14px;bottom:38%;width:1px;background:rgba(237,238,233,0.25);}
+  .zone-line.z1{left:39.3%;}
+  .zone-line.z2{left:60.6%;}
+  .keeper{position:absolute;bottom:38%;width:34px;height:56px;transform:translateX(-50%);transition:left 0.5s cubic-bezier(.3,0,.4,1);}
+  .keeper .head{width:16px;height:16px;border-radius:50%;background:#E8B94B;margin:0 auto;}
+  .keeper .body{width:30px;height:36px;border-radius:8px 8px 4px 4px;background:#7FB8D9;margin:2px auto 0;}
+  .ball{position:absolute;bottom:8%;left:50%;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #fff, #cfd6da 60%, #9aa3a8);transform:translateX(-50%);transition:left 0.55s cubic-bezier(.2,.6,.3,1), bottom 0.55s cubic-bezier(.2,.6,.3,1);}
+  .kick-buttons{display:flex;gap:8px;margin-bottom:6px;}
+  .kick-buttons button{flex:1;background:var(--panel-raised);border:1px solid var(--grid);color:var(--text);}
+  .kick-buttons button:hover:not(:disabled){border-color:var(--amber);}
+  .penal-result{text-align:center;font-family:'Spectral',serif;font-size:1.4rem;margin:10px 0;min-height:1.6em;}
+  .penal-result.goal{color:var(--green);}
+  .penal-result.save{color:var(--red);}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="title-block">
+    <h1>La posición correcta</h1>
+    <div class="sub">A partir de dos razones simples hay que deducir dónde caen los cuatro puntos. Acertar suma un punto, y siempre se patea un penal: si es gol, suma otro.</div>
+  </div>
+
+  <!-- SETUP -->
+  <div id="screen-setup" class="panel">
+    <label for="numplayers">¿Cuántos juegan?</label>
+    <select id="numplayers" onchange="onNumPlayersChange()">
+      <option value="2">2 jugadores</option>
+      <option value="3">3 jugadores</option>
+    </select>
+    <label for="p1name">Jugador 1</label>
+    <select id="p1name"></select>
+    <label for="p2name">Jugador 2</label>
+    <select id="p2name"></select>
+    <div id="p3-row">
+      <label for="p3name">Jugador 3</label>
+      <select id="p3name"></select>
+    </div>
+    <div class="warn" id="setup-warn"></div>
+    <div style="color:var(--muted); font-size:0.85rem; margin-bottom:16px;" id="format-note"></div>
+    <button class="btn-primary" onclick="startGame()">Comenzar</button>
+  </div>
+
+  <!-- PLAY -->
+  <div id="screen-play" class="panel hidden">
+    <div class="scoreboard" id="scoreboard"></div>
+    <div class="status-row">
+      <span id="round-label"></span>
+      <span class="turn" id="turn-label"></span>
+    </div>
+    <div class="roundcount" id="roundcount"></div>
+    <div class="known-box" id="known-box"></div>
+    <div class="clues" id="clues"></div>
+    <div class="instruction">Tocá la recta que sea consistente con las dos razones.</div>
+    <div class="cards" id="cards"></div>
+    <div id="feedback"></div>
+    <button class="btn-primary hidden" id="btn-continue" onclick="fromAnswerContinue()" style="margin-top:14px;">Siguiente</button>
+  </div>
+
+  <!-- PENAL -->
+  <div id="screen-penal" class="panel hidden">
+    <div class="penal-intro" id="penal-intro"></div>
+    <div class="goal-frame" id="goal-frame">
+      <div class="zone-line z1"></div>
+      <div class="zone-line z2"></div>
+      <div class="keeper" id="keeper" style="left:50%;">
+        <div class="head"></div>
+        <div class="body"></div>
+      </div>
+      <div class="ball" id="ball"></div>
+    </div>
+    <div class="kick-buttons" id="kick-buttons">
+      <button onclick="kick('L')">Izquierda</button>
+      <button onclick="kick('C')">Centro</button>
+      <button onclick="kick('R')">Derecha</button>
+    </div>
+    <div class="penal-result" id="penal-result"></div>
+    <button class="btn-primary hidden" id="btn-penal-continue" onclick="fromPenalContinue()">Siguiente</button>
+  </div>
+
+  <!-- FINAL -->
+  <div id="screen-final" class="panel hidden">
+    <h2 style="margin-bottom:14px;">Resultado final</h2>
+    <div id="final-scores"></div>
+    <div class="winner" id="final-winner"></div>
+    <button class="btn-secondary" onclick="location.reload()" style="margin-top:16px;">Jugar de nuevo</button>
+  </div>
+
+</div>
+
+<script>
+// ---------- utilidades ----------
+function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b];}return a||1;}
+function fracLabel(num,den){
+  if(den<0){num=-num;den=-den;}
+  if(Number.isInteger(num) && Number.isInteger(den)){
+    const g=gcd(num,den);
+    num/=g; den/=g;
+    return den===1 ? `${num}` : `${num}/${den}`;
+  }
+  return (num/den).toString();
+}
+function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+function shuffle(arr){
+  const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j=randInt(0,i); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+// ---------- lista de estudiantes ----------
+const STUDENTS=["Aylen","Camila","Elias","Eugenia","Ignacio","Leonardo","Lucas","Luis","Melany","Melina","Nadia","Nicolás","Noelia","Pablo","Vanina"];
+
+// ---------- actividades fijas (de la clase del 04/09) ----------
+const ACTIVITIES=[
+  { A:0,  B:7,   C:3,    D:10,
+    clue1:{P:'A',Q:'C',R:'B',num:3, den:7},
+    clue2:{P:'D',Q:'A',R:'B',num:10,den:3} },
+  { A:4,  B:0,   C:7,    D:-5,
+    clue1:{P:'D',Q:'B',R:'C',num:5, den:12},
+    clue2:{P:'A',Q:'B',R:'D',num:4, den:9} },
+  { A:0,  B:-6,  C:2,    D:-3.75,
+    clue1:{P:'C',Q:'A',R:'B',num:1, den:4},
+    clue2:{P:'D',Q:'B',R:'A',num:-3,den:5} },
+  { A:-2, B:0,   C:-1,   D:4,
+    clue1:{P:'B',Q:'D',R:'A',num:-8,den:4},
+    clue2:{P:'C',Q:'B',R:'A',num:2, den:-2} },
+  { A:9,  B:-2,  C:18,   D:0,
+    clue1:{P:'A',Q:'D',R:'B',num:9, den:11},
+    clue2:{P:'D',Q:'C',R:'B',num:18,den:-2} },
+  { A:-3, B:13,  C:0,    D:5,
+    clue1:{P:'A',Q:'B',R:'C',num:16,den:3},
+    clue2:{P:'D',Q:'B',R:'C',num:8, den:-5} },
+  { A:0,  B:6,   C:10,   D:7,
+    clue1:{P:'B',Q:'A',R:'C',num:-3,den:2},
+    clue2:{P:'B',Q:'A',R:'D',num:-6,den:1} },
+  { A:0,  B:3,   C:1,    D:12,
+    clue1:{P:'C',Q:'B',R:'A',num:-2,den:1},
+    clue2:{P:'B',Q:'D',R:'C',num:-9,den:2} },
+  { A:0,  B:5,   C:4,    D:2,
+    clue1:{P:'B',Q:'C',R:'A',num:1, den:5},
+    clue2:{P:'A',Q:'C',R:'D',num:2, den:1} }
+];
+
+// ---------- generador de opciones (correcta + 3 incorrectas) a partir del ORDEN real de A,B,C,D ----------
+function permutations(arr){
+  if(arr.length<=1) return [arr];
+  const result=[];
+  for(let i=0;i<arr.length;i++){
+    const rest=arr.slice(0,i).concat(arr.slice(i+1));
+    for(const perm of permutations(rest)) result.push([arr[i],...perm]);
+  }
+  return result;
+}
+function buildOptions(A,B,C,D){
+  const coords={A,B,C,D};
+  const correctOrder=Object.keys(coords).sort((a,b)=>coords[a]-coords[b]);
+  const key=arr=>arr.join('');
+  const correctKey=key(correctOrder);
+  const wrongPerms=shuffle(permutations(['A','B','C','D']).filter(p=>key(p)!==correctKey));
+  const chosenWrong=wrongPerms.slice(0,3);
+
+  const options=[
+    {order:correctOrder, correct:true},
+    ...chosenWrong.map(o=>({order:o, correct:false}))
+  ];
+  const order=shuffle([0,1,2,3]);
+  const shuffledOptions=order.map(i=>options[i]);
+  const correctIndex=shuffledOptions.findIndex(o=>o.correct);
+  return {options:shuffledOptions,correctIndex};
+}
+
+// ---------- render de las rectas (solo orden, sin escala) ----------
+function orderSVG(orderArr){
+  const W=220,H=64,padL=20,padR=20;
+  const y=38;
+  const step=(W-padL-padR)/(orderArr.length-1);
+  const colors={A:'#E8B94B',B:'#EDEEE9',C:'#4FA97A',D:'#7FB8D9'};
+  const dots=orderArr.map((letter,i)=>{
+    const x=padL+i*step;
+    const ly=(i%2===0)? y-10 : y+20;
+    return `<circle cx="${x}" cy="${y}" r="4" fill="${colors[letter]}"/>
+      <text x="${x}" y="${ly}" text-anchor="middle" font-family="Spectral, serif" font-style="italic" font-size="13" fill="${colors[letter]}">${letter}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <line x1="${padL-8}" y1="${y}" x2="${W-padR+8}" y2="${y}" stroke="#3d5064" stroke-width="1.4"/>
+    ${dots}
+  </svg>`;
+}
+
+// ---------- estado ----------
+let players=[];
+let numPlayers=2;
+let playerActivities=[]; // índices en ACTIVITIES asignados a cada jugador
+let turnQueue=[], turnPointer=0;
+let totalRoundsEach=3; // siempre 3 rondas por jugador, sin importar la cantidad de jugadores
+let currentPlayer=0;
+let puzzle=null, answered=false, lastCorrect=false;
+
+function fillStudentSelect(sel, defaultIndex){
+  sel.innerHTML = STUDENTS.map((n,i)=>`<option value="${n}" ${i===defaultIndex?'selected':''}>${n}</option>`).join('');
+}
+function onNumPlayersChange(){
+  numPlayers = parseInt(document.getElementById('numplayers').value);
+  document.getElementById('p3-row').style.display = numPlayers===3 ? 'block' : 'none';
+  document.getElementById('format-note').textContent =
+    `Formato: mejor de 3. Cada jugador resuelve 3 actividades, alternando de a una. Responder bien suma 1 punto y siempre se patea un penal: si mete gol, suma otro punto. Gana quien más puntos sume; si empatan, queda empate.`;
+}
+window.addEventListener('DOMContentLoaded', ()=>{
+  fillStudentSelect(document.getElementById('p1name'), 0);
+  fillStudentSelect(document.getElementById('p2name'), 1);
+  fillStudentSelect(document.getElementById('p3name'), 2);
+  document.getElementById('p3-row').style.display='none';
+  onNumPlayersChange();
+});
+
+function buildTurnQueue(){
+  const q=[];
+  for(let i=0;i<totalRoundsEach;i++){
+    for(let pl=0; pl<numPlayers; pl++) q.push(pl);
+  }
+  return q;
+}
+
+function startGame(){
+  const names=[document.getElementById('p1name').value, document.getElementById('p2name').value];
+  if(numPlayers===3) names.push(document.getElementById('p3name').value);
+
+  const warn=document.getElementById('setup-warn');
+  if(new Set(names).size !== names.length){ warn.textContent='Elegí jugadores distintos.'; return; }
+  warn.textContent='';
+
+  players = names.map(n=>({name:n,results:[],points:0}));
+
+  const needed = totalRoundsEach * numPlayers; // 6 con 2 jugadores, 9 con 3 jugadores
+  const allIdx = ACTIVITIES.map((_,i)=>i);
+  const order=shuffle(allIdx).slice(0,needed);
+  playerActivities=[];
+  for(let i=0;i<numPlayers;i++){
+    playerActivities.push(order.slice(i*totalRoundsEach,(i+1)*totalRoundsEach));
+  }
+
+  turnQueue=buildTurnQueue(); turnPointer=0;
+  document.getElementById('screen-setup').classList.add('hidden');
+  document.getElementById('screen-play').classList.remove('hidden');
+  loadRound();
+}
+
+function renderScoreboard(){
+  const sb=document.getElementById('scoreboard');
+  sb.innerHTML = players.map((p,i)=>`
+    <div class="box ${i===currentPlayer?'active':''}">
+      <div class="name">${p.name}</div>
+      <div class="points">${p.points}</div>
+    </div>
+  `).join('');
+}
+
+function currentPuzzleFor(playerIdx){
+  const activityIdx = playerActivities[playerIdx][players[playerIdx].results.length];
+  const act = ACTIVITIES[activityIdx];
+  return {A:act.A,B:act.B,C:act.C,D:act.D,clue1:act.clue1,clue2:act.clue2};
+}
+
+function loadRound(){
+  answered=false;
+  currentPlayer = turnQueue[turnPointer];
+  const base = currentPuzzleFor(currentPlayer);
+  const built = buildOptions(base.A,base.B,base.C,base.D);
+  puzzle = {A:base.A,B:base.B,trueC:base.C,trueD:base.D,clue1:base.clue1,clue2:base.clue2,
+            options:built.options, correctIndex:built.correctIndex};
+
+  const p=players[currentPlayer];
+
+  document.getElementById('screen-penal').classList.add('hidden');
+  document.getElementById('screen-play').classList.remove('hidden');
+
+  renderScoreboard();
+  document.getElementById('round-label').textContent = `Actividad ${p.results.length+1} de ${totalRoundsEach}`;
+  document.getElementById('turn-label').textContent = `Turno de ${p.name}`;
+
+  const rc=document.getElementById('roundcount');
+  rc.innerHTML='';
+  for(let i=0;i<totalRoundsEach;i++){
+    const s=document.createElement('span');
+    if(i<p.results.length) s.classList.add(p.results[i]?'done-ok':'done-no');
+    else if(i===p.results.length) s.classList.add('current');
+    rc.appendChild(s);
+  }
+
+  document.getElementById('known-box').innerHTML = `A en <b>${puzzle.A}</b> &nbsp;·&nbsp; B en <b>${puzzle.B}</b>`;
+  document.getElementById('clues').innerHTML = `
+    <div class="clue">(${puzzle.clue1.P};${puzzle.clue1.Q};${puzzle.clue1.R}) = ${fracLabel(puzzle.clue1.num,puzzle.clue1.den)}</div>
+    <div class="clue">(${puzzle.clue2.P};${puzzle.clue2.Q};${puzzle.clue2.R}) = ${fracLabel(puzzle.clue2.num,puzzle.clue2.den)}</div>
+  `;
+
+  const labels=['I','II','III','IV'];
+  const cardsDiv=document.getElementById('cards');
+  cardsDiv.innerHTML='';
+  puzzle.options.forEach((o,idx)=>{
+    const el=document.createElement('div');
+    el.className='card';
+    el.id='card-'+idx;
+    el.innerHTML=`
+      <div class="card-label">Recta ${labels[idx]}</div>
+      ${orderSVG(o.order)}
+    `;
+    el.onclick=()=>selectCard(idx);
+    cardsDiv.appendChild(el);
+  });
+  document.getElementById('feedback').innerHTML='';
+  document.getElementById('btn-continue').classList.add('hidden');
+}
+
+function selectCard(idx){
+  if(answered) return;
+  answered=true;
+  const correct = idx===puzzle.correctIndex;
+  lastCorrect=correct;
+  const p=players[currentPlayer];
+  p.results.push(correct);
+  if(correct) p.points++;
+
+  puzzle.options.forEach((o,i)=>{
+    const el=document.getElementById('card-'+i);
+    if(i===idx && i===puzzle.correctIndex) el.classList.add('selected-correct');
+    else if(i===idx) el.classList.add('selected-wrong');
+    if(i===puzzle.correctIndex && i!==idx) el.classList.add('reveal-correct');
+  });
+
+  const fb=document.getElementById('feedback');
+  const rom=['I','II','III','IV'];
+  if(correct){
+    fb.innerHTML = `<div class="feedback ok">¡Correcto! C = ${puzzle.trueC}, D = ${puzzle.trueD}. +1 punto. Ahora pateá el penal.</div>`;
+  } else {
+    fb.innerHTML = `<div class="feedback no">No era esa. La correcta era la recta ${rom[puzzle.correctIndex]}: C = ${puzzle.trueC}, D = ${puzzle.trueD}. Igual pateás el penal.</div>`;
+  }
+  renderScoreboard();
+  document.getElementById('btn-continue').classList.remove('hidden');
+}
+
+function fromAnswerContinue(){
+  goToPenal();
+}
+function fromPenalContinue(){
+  advanceTurn();
+}
+
+function goToPenal(){
+  document.getElementById('screen-play').classList.add('hidden');
+  document.getElementById('screen-penal').classList.remove('hidden');
+  const p=players[currentPlayer];
+  document.getElementById('penal-intro').textContent = `${p.name} patea el penal`;
+  document.getElementById('penal-result').textContent='';
+  document.getElementById('penal-result').className='penal-result';
+  document.getElementById('btn-penal-continue').classList.add('hidden');
+  document.getElementById('keeper').style.left='50%';
+  document.getElementById('ball').style.left='50%';
+  document.getElementById('ball').style.bottom='8%';
+  document.querySelectorAll('#kick-buttons button').forEach(b=>b.disabled=false);
+}
+
+const ZONE_X={L:'22%',C:'50%',R:'78%'};
+const ZONE_BALL_Y='58%';
+
+function kick(dir){
+  document.querySelectorAll('#kick-buttons button').forEach(b=>b.disabled=true);
+  const keeperDir = ['L','C','R'][randInt(0,2)];
+  const keeperEl=document.getElementById('keeper');
+  const ballEl=document.getElementById('ball');
+
+  keeperEl.style.left = ZONE_X[keeperDir];
+  ballEl.style.left = ZONE_X[dir];
+  ballEl.style.bottom = ZONE_BALL_Y;
+
+  setTimeout(()=>{
+    const saved = (keeperDir===dir);
+    const p=players[currentPlayer];
+    const resultEl=document.getElementById('penal-result');
+    if(saved){
+      resultEl.textContent='¡ATAJADA!';
+      resultEl.className='penal-result save';
+    } else {
+      p.points++;
+      resultEl.textContent='¡GOL! +1 punto';
+      resultEl.className='penal-result goal';
+      renderScoreboard();
+    }
+    document.getElementById('btn-penal-continue').classList.remove('hidden');
+  }, 600);
+}
+
+function advanceTurn(){
+  turnPointer++;
+  if(turnPointer>=turnQueue.length){
+    renderFinal();
+  } else {
+    loadRound();
+  }
+}
+
+function renderFinal(){
+  document.getElementById('screen-play').classList.add('hidden');
+  document.getElementById('screen-penal').classList.add('hidden');
+  document.getElementById('screen-final').classList.remove('hidden');
+  document.getElementById('final-scores').innerHTML = players.map(p=>`
+    <div class="score-line"><span class="name">${p.name}</span><span>${p.points} punto(s) · ${p.results.filter(Boolean).length}/${totalRoundsEach} aciertos</span></div>
+  `).join('');
+
+  const maxPoints = Math.max(...players.map(p=>p.points));
+  const winners = players.filter(p=>p.points===maxPoints);
+  let text;
+  if(winners.length===players.length){
+    text = '🤝 Empate';
+  } else if(winners.length>1){
+    text = `🤝 Empate entre ${winners.map(p=>p.name).join(' y ')}`;
+  } else {
+    text = `🏆 Gana ${winners[0].name}`;
+  }
+  document.getElementById('final-winner').textContent = text;
+}
+</script>
+
+</body>
+</html>
